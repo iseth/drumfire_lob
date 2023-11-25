@@ -101,87 +101,89 @@ module DrumfireLob
     end
   end
 
-  class IntegrationTest < Minitest::Test
-    def setup
-      question4 = Question.new "Awesome! Do you prefer dark chocolate or milk chocolate?", choices: %i(dark milk)
-      question3 = Question.new "Fancy some Swiss chocolate?", connector: Branching.new(yes: question4, no: nil)
-      question2 = Question.new "Fancy some Swiss mulled wine?"
-      branching = Branching.new(yes: question2, no: question3)
-      question1 = Question.new "Are you 18 or more?", connector: branching
-      
-      @form = Form.new start: question1
-    end
-    
-    def test_2_way_branching_long_with_rollback
-      # assert & execute
-      submission = @form.filling do |f|
-        assert_equal "Are you 18 or more?", f.current_question.label
+  module IntegrationTests
+    class TwoWayBranchingTest < Minitest::Test
+      def setup
+        question4 = Question.new "Awesome! Do you prefer dark chocolate or milk chocolate?", choices: %i(dark milk)
+        question3 = Question.new "Fancy some Swiss chocolate?", connector: Branching.new(yes: question4, no: nil)
+        question2 = Question.new "Fancy some Swiss mulled wine?"
+        branching = Branching.new(yes: question2, no: question3)
+        question1 = Question.new "Are you 18 or more?", connector: branching
         
-        f.answer :yes
-        assert_equal "Fancy some Swiss mulled wine?", f.current_question.label
-        
-        f.rollback
-        assert_equal "Are you 18 or more?", f.current_question.label
-        
-        f.answer :no
-        assert_equal "Fancy some Swiss chocolate?", f.current_question.label
-        
-        f.answer :yes
-        assert_equal "Awesome! Do you prefer dark chocolate or milk chocolate?", f.current_question.label
-        
-        f.answer :milk
-        
-        assert f.ended?
+        @form = Form.new start: question1
       end
       
-      assert_output(<<~TXT) { submission.print_out }
-        - Are you 18 or more?
-          > No
-        - Fancy some Swiss chocolate?
-          > Yes
-        - Awesome! Do you prefer dark chocolate or milk chocolate?
-          > Milk
-      TXT
-    end
-    
-    def test_2_way_branching_medium
-      submission = @form.filling do |f|
-        assert_equal "Are you 18 or more?", f.current_question.label
+      def test_2_way_branching_short
+        submission = @form.filling do |f|
+          assert_equal "Are you 18 or more?", f.current_question.label
+          
+          f.answer :yes
+          assert_equal "Fancy some Swiss mulled wine?", f.current_question.label
+          
+          f.answer :no
+          
+          assert f.ended?
+        end
         
-        f.answer :no
-        assert_equal "Fancy some Swiss chocolate?", f.current_question.label
-        
-        f.answer :no
-        
-        assert f.ended?
+        assert_output(<<~TXT) { submission.print_out }
+          - Are you 18 or more?
+            > Yes
+          - Fancy some Swiss mulled wine?
+            > No
+        TXT
       end
       
-      assert_output(<<~TXT) { submission.print_out }
-        - Are you 18 or more?
-          > No
-        - Fancy some Swiss chocolate?
-          > No
-      TXT
-    end
-    
-    def test_2_way_branching_short
-      submission = @form.filling do |f|
-        assert_equal "Are you 18 or more?", f.current_question.label
+      def test_2_way_branching_medium
+        submission = @form.filling do |f|
+          assert_equal "Are you 18 or more?", f.current_question.label
+          
+          f.answer :no
+          assert_equal "Fancy some Swiss chocolate?", f.current_question.label
+          
+          f.answer :no
+          
+          assert f.ended?
+        end
         
-        f.answer :yes
-        assert_equal "Fancy some Swiss mulled wine?", f.current_question.label
-        
-        f.answer :no
-        
-        assert f.ended?
+        assert_output(<<~TXT) { submission.print_out }
+          - Are you 18 or more?
+            > No
+          - Fancy some Swiss chocolate?
+            > No
+        TXT
       end
       
-      assert_output(<<~TXT) { submission.print_out }
-        - Are you 18 or more?
-          > Yes
-        - Fancy some Swiss mulled wine?
-          > No
-      TXT
+      def test_2_way_branching_long_with_rollback
+        # assert & execute
+        submission = @form.filling do |f|
+          assert_equal "Are you 18 or more?", f.current_question.label
+          
+          f.answer :yes
+          assert_equal "Fancy some Swiss mulled wine?", f.current_question.label
+          
+          f.rollback
+          assert_equal "Are you 18 or more?", f.current_question.label
+          
+          f.answer :no
+          assert_equal "Fancy some Swiss chocolate?", f.current_question.label
+          
+          f.answer :yes
+          assert_equal "Awesome! Do you prefer dark chocolate or milk chocolate?", f.current_question.label
+          
+          f.answer :milk
+          
+          assert f.ended?
+        end
+        
+        assert_output(<<~TXT) { submission.print_out }
+          - Are you 18 or more?
+            > No
+          - Fancy some Swiss chocolate?
+            > Yes
+          - Awesome! Do you prefer dark chocolate or milk chocolate?
+            > Milk
+        TXT
+      end
     end
   end
 end
