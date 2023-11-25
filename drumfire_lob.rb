@@ -2,68 +2,65 @@ require "minitest/autorun"
 
 module DrumfireLob
   class Form
-    def initialize
-      @questions = []
+    attr_reader :start
+    
+    def self.collect_questions(question, memo = {})
+      memo.store question.object_id, question
+      question.follow_ups.each { |q| collect_questions q, memo }
+      memo
     end
     
-    def <<(question_or_connector)
-      @questions << question_or_connector
+    def initialize(start:)
+      @start = start
+      @questions = Form.collect_questions(@start)
     end
     
     def filling
      yield Filling.new(self)
     end
     
-    def length
-      @questions.length
-    end
-    
-    def question_at(index)
-      @questions.at index
+    def find_question(id)
+      @questions.fetch id
     end
     
     class Filling
+      attr_reader :current_question
+      
       def initialize form
         @form    = form
-        @answers = Array.new(@form.length)
-        @index   = 0
-      end
-      
-      def current_question
-        question_or_connector = @form.question_at(@index)
-        
-        case question_or_connector
-        when Question
-          question_or_connector.label
-        when Branching
-          question_or_connector.call(@answers[@index - 1]).label # TODO: better name for `#call`?
-        end
+        @answers = {}
+        @current_question = @form.start
       end
       
       def answer(value)
-        @answers[@index] = value
-        @index = @index + 1
+        @answers.store current_question.object_id, value
+        
+        @current_question = @current_question.connector.(value) # TODO: better name for `#call`?
         # FIXME: handle reaching the end of the form 
       end
       
       def rollback
-        @index = @index - 1
-        @answers.delete_at @index
+        @answers.delete @current_question.object_id
+        @current_question = @form.find_question(@answers.keys.last) # FIXME: seems very brittle
       end
     end
   end
   
   class Question
-    attr_reader :label
+    attr_reader :label, :connector
     
-    def initialize label
-      @label = label
+    def initialize label, connector: NullConnector.new
+      @label, @connector = label, connector
+    end
+    
+    def follow_ups # TODO: better name maybe?
+      connector.questions
     end
   end
   
   class Branching
-    def initialize(source:, yes:, no:)
-      @source, @yes, @no = source, yes, no
+    def initialize(yes:, no:)
+      @yes, @no = yes, no
     end
     
     def call(answer)
@@ -75,6 +72,20 @@ module DrumfireLob
       else
         raise ArgumentError, "only :yes and :no are accepted answers, got #{answer}"
       end
+    end
+    
+    def questions
+      [@yes, @no]
+    end
+  end
+  
+  class NullConnector
+    def call(*)
+      # noop
+    end
+    
+    def questions
+      []
     end
   end
 
@@ -90,16 +101,16 @@ module DrumfireLob
       
       # assert & execute
       form.filling do |f|
-        assert_equal "Are you 18 or more?", f.current_question
+        assert_equal "Are you 18 or more?", f.current_question.label
         
         f.answer :yes
-        assert_equal "Fancy some Swiss mulled wine?", f.current_question
+        assert_equal "Fancy some Swiss mulled wine?", f.current_question.label
         
         f.rollback
-        assert_equal "Are you 18 or more?", f.current_question
+        assert_equal "Are you 18 or more?", f.current_question.label
         
         f.answer :no
-        assert_equal "Fancy some Swiss chocolate?", f.current_question
+        assert_equal "Fancy some Swiss chocolate?", f.current_question.label
       end
     end
   end
