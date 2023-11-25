@@ -87,7 +87,7 @@ module DrumfireLob
     end
     
     def accepted_values
-      @branches.keys[..-1].join(", ") + " or " + @branches.keys.last
+      @branches.keys[..-2].map(&:to_s).join(", ") + " or " + @branches.keys.last.to_s
     end
   end
   
@@ -183,6 +183,20 @@ module DrumfireLob
           - Awesome! Do you prefer dark chocolate or milk chocolate?
             > Milk
         TXT
+      end
+    end
+  end
+  
+  module UnitTests
+    class BranchingTest < Minitest::Test
+      def test_calling_with_a_wrong_answer
+        b = Branching.new foo: "Foo", bar: "Bar", baz: "Baz"
+        
+        error = assert_raises(ArgumentError) do
+          b.call :qux
+        end
+        
+        assert_equal 'only foo, bar or baz are accepted answers, got qux', error.message
       end
     end
   end
