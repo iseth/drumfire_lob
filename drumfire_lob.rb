@@ -16,7 +16,7 @@ module DrumfireLob
     end
     
     def filling
-     yield Filling.new(self)
+      Filling.new(self).tap { yield _1 }
     end
     
     def find_question(id)
@@ -42,6 +42,13 @@ module DrumfireLob
       def rollback
         @answers.delete @current_question.object_id
         @current_question = @form.find_question(@answers.keys.last) # FIXME: seems very brittle
+      end
+      
+      def print_out
+        @answers.each do |question_id, answer|
+          puts "- #{@form.find_question(question_id).label}"
+          puts "  > #{answer.capitalize}"
+        end
       end
     end
   end
