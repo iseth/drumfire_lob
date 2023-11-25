@@ -93,7 +93,7 @@ module DrumfireLob
   
   class ComparisonBranching < Branching
     def call(answer)
-      
+      @branches.find { |vals, _| vals.include? answer }.last
     end
   end
   
