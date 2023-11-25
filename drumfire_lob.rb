@@ -100,7 +100,7 @@ module DrumfireLob
       form = Form.new start: question1
       
       # assert & execute
-      form.filling do |f|
+      submission = form.filling do |f|
         assert_equal "Are you 18 or more?", f.current_question.label
         
         f.answer :yes
@@ -111,7 +111,16 @@ module DrumfireLob
         
         f.answer :no
         assert_equal "Fancy some Swiss chocolate?", f.current_question.label
+        
+        f.answer :yes
       end
+      
+      assert_output(<<~TXT) { submission.print_out }
+        - Are you 18 or more?
+          > No
+        - Fancy some Swiss chocolate?
+          > Yes
+      TXT
     end
   end
 end
