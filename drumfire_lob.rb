@@ -44,6 +44,10 @@ module DrumfireLob
         @current_question = @form.find_question(@answers.keys.last) # FIXME: seems very brittle
       end
       
+      def ended?
+        @current_question.nil?
+      end
+      
       def print_out
         @answers.each do |question_id, answer|
           puts "- #{@form.find_question(question_id).label}"
@@ -126,6 +130,8 @@ module DrumfireLob
         assert_equal "Awesome! Do you prefer dark chocolate or milk chocolate?", f.current_question.label
         
         f.answer :milk
+        
+        assert f.ended?
       end
       
       assert_output(<<~TXT) { submission.print_out }
@@ -146,6 +152,8 @@ module DrumfireLob
         assert_equal "Fancy some Swiss chocolate?", f.current_question.label
         
         f.answer :no
+        
+        assert f.ended?
       end
       
       assert_output(<<~TXT) { submission.print_out }
@@ -164,6 +172,8 @@ module DrumfireLob
         assert_equal "Fancy some Swiss mulled wine?", f.current_question.label
         
         f.answer :no
+        
+        assert f.ended?
       end
       
       assert_output(<<~TXT) { submission.print_out }
