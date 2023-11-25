@@ -80,15 +80,13 @@ module DrumfireLob
 
   class IntegrationTest < Minitest::Test
     def test_2_way_branching
-      form = Form.new
       # setup
-      question1 = Question.new "Are you 18 or more?" # Implying that all questions are boolean ATM
-      question2 = Question.new "Fancy some Swiss mulled wine?"
       question3 = Question.new "Fancy some Swiss chocolate?"
-      branching = Branching.new(source: question1, yes: question2, no: question3) # Implying that branching conditions are always yes/no
+      question2 = Question.new "Fancy some Swiss mulled wine?"
+      branching = Branching.new(yes: question2, no: question3)             # Implying that branching conditions are always yes/no
+      question1 = Question.new "Are you 18 or more?", connector: branching # Implying that all questions are boolean ATM
       
-      form << question1
-      form << branching
+      form = Form.new start: question1
       
       # assert & execute
       form.filling do |f|
