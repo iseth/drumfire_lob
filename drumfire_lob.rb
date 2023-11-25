@@ -198,6 +198,13 @@ module DrumfireLob
         
         assert_equal 'only foo, bar or baz are accepted answers, got qux', error.message
       end
+      
+      def test_branching_to_an_exit
+        b = Branching.new foo: "Foo", bar: nil
+        
+        refute_nil b.call(:foo)
+        assert_nil b.call(:bar)
+      end
     end
   end
 end
