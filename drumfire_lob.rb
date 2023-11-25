@@ -2,18 +2,42 @@ require "minitest/autorun"
 
 module DrumfireLob
   class Form
-    def <<(question_or_connector)
+    def initialize
+      @questions = []
     end
     
-    def current_question
+    def <<(question_or_connector)
+      @questions << question_or_connector
     end
     
     def filling
-     yield self
+     yield Filling.new(self)
+    end
+    
+    def length
+      @questions.length
+    end
+    
+    def question_at(index)
+      @questions.at index
+    end
+    
+    class Filling
+      def initialize form
+        @form    = form
+        @answers = Array.new(@form.length)
+        @index   = 0
+      end
+      
+      def current_question
+        @form.question_at(@index).label
+      end
     end
   end
   
   class Question
+    attr_reader :label
+    
     def initialize label
       @label = label
     end
