@@ -30,7 +30,25 @@ module DrumfireLob
       end
       
       def current_question
-        @form.question_at(@index).label
+        question_or_connector = @form.question_at(@index)
+        
+        case question_or_connector
+        when Question
+          question_or_connector.label
+        when Branching
+          question_or_connector.call(@answers[@index - 1]).label # TODO: better name for `#call`?
+        end
+      end
+      
+      def answer(value)
+        @answers[@index] = value
+        @index = @index + 1
+        # FIXME: handle reaching the end of the form 
+      end
+      
+      def rollback
+        @index = @index - 1
+        @answers.delete_at @index
       end
     end
   end
@@ -46,6 +64,17 @@ module DrumfireLob
   class Branching
     def initialize(source:, yes:, no:)
       @source, @yes, @no = source, yes, no
+    end
+    
+    def call(answer)
+      case answer
+      when :yes
+        @yes
+      when :no
+        @no
+      else
+        raise ArgumentError, "only :yes and :no are accepted answers, got #{answer}"
+      end
     end
   end
 
