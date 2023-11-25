@@ -93,7 +93,7 @@ module DrumfireLob
   
   class ComparisonBranching < Branching
     def call(answer)
-      @branches.find { |vals, _| vals.include? answer }.last
+      @branches.find { |vals, _| vals.include? answer }&.last or raise ArgumentError, "#{answer} is not a valid comparison value"
     end
   end
   
@@ -219,6 +219,16 @@ module DrumfireLob
         
         assert_equal "Question 2", b.call(20)
         assert_equal "Question 1", b.call(1)
+      end
+      
+      def test_calling_with_a_wrong_answer
+        b = ComparisonBranching.new 0..17 => "Question 1", 18.. => "Question 2"
+        
+        error = assert_raises(ArgumentError) do
+          b.call -2
+        end
+        
+        assert_equal '-2 is not a valid comparison value', error.message
       end
     end
   end
