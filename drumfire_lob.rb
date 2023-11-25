@@ -91,6 +91,12 @@ module DrumfireLob
     end
   end
   
+  class ComparisonBranching < Branching
+    def call(answer)
+      
+    end
+  end
+  
   class NullConnector
     def call(*)
       # noop
@@ -204,6 +210,15 @@ module DrumfireLob
         
         refute_nil b.call(:foo)
         assert_nil b.call(:bar)
+      end
+    end
+    
+    class ComparisonBranchingTest < Minitest::Test
+      def test_calling
+        b = ComparisonBranching.new 0..17 => "Question 1", 18.. => "Question 2"
+        
+        assert_equal "Question 2", b.call(20)
+        assert_equal "Question 1", b.call(1)
       end
     end
   end
