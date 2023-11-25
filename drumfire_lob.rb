@@ -51,7 +51,7 @@ module DrumfireLob
       def print_out
         @answers.each do |question_id, answer|
           puts "- #{@form.find_question(question_id).label}"
-          puts "  > #{answer.capitalize}"
+          puts "  > #{answer.to_s.capitalize}"
         end
       end
     end
@@ -113,17 +113,17 @@ module DrumfireLob
         question4 = Question.new "Awesome! Do you prefer dark chocolate or milk chocolate?", choices: %i(dark milk)
         question3 = Question.new "Fancy some Swiss chocolate?", connector: Branching.new(yes: question4, no: nil)
         question2 = Question.new "Fancy some Swiss mulled wine?"
-        branching = Branching.new(yes: question2, no: question3)
-        question1 = Question.new "Are you 18 or more?", connector: branching
+        branching = ComparisonBranching.new(18.. => question2, 0..17 => question3)
+        question1 = Question.new "How old are you?", connector: branching
         
         @form = Form.new start: question1
       end
       
       def test_2_way_branching_short
         submission = @form.filling do |f|
-          assert_equal "Are you 18 or more?", f.current_question.label
+          assert_equal "How old are you?", f.current_question.label
           
-          f.answer :yes
+          f.answer 20
           assert_equal "Fancy some Swiss mulled wine?", f.current_question.label
           
           f.answer :no
@@ -132,8 +132,8 @@ module DrumfireLob
         end
         
         assert_output(<<~TXT) { submission.print_out }
-          - Are you 18 or more?
-            > Yes
+          - How old are you?
+            > 20
           - Fancy some Swiss mulled wine?
             > No
         TXT
@@ -141,9 +141,9 @@ module DrumfireLob
       
       def test_2_way_branching_medium
         submission = @form.filling do |f|
-          assert_equal "Are you 18 or more?", f.current_question.label
+          assert_equal "How old are you?", f.current_question.label
           
-          f.answer :no
+          f.answer 14
           assert_equal "Fancy some Swiss chocolate?", f.current_question.label
           
           f.answer :no
@@ -152,8 +152,8 @@ module DrumfireLob
         end
         
         assert_output(<<~TXT) { submission.print_out }
-          - Are you 18 or more?
-            > No
+          - How old are you?
+            > 14
           - Fancy some Swiss chocolate?
             > No
         TXT
@@ -162,15 +162,15 @@ module DrumfireLob
       def test_2_way_branching_long_with_rollback
         # assert & execute
         submission = @form.filling do |f|
-          assert_equal "Are you 18 or more?", f.current_question.label
+          assert_equal "How old are you?", f.current_question.label
           
-          f.answer :yes
+          f.answer 20
           assert_equal "Fancy some Swiss mulled wine?", f.current_question.label
           
           f.rollback
-          assert_equal "Are you 18 or more?", f.current_question.label
+          assert_equal "How old are you?", f.current_question.label
           
-          f.answer :no
+          f.answer 14
           assert_equal "Fancy some Swiss chocolate?", f.current_question.label
           
           f.answer :yes
@@ -182,8 +182,8 @@ module DrumfireLob
         end
         
         assert_output(<<~TXT) { submission.print_out }
-          - Are you 18 or more?
-            > No
+          - How old are you?
+            > 14
           - Fancy some Swiss chocolate?
             > Yes
           - Awesome! Do you prefer dark chocolate or milk chocolate?
