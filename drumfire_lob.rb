@@ -56,33 +56,34 @@ module DrumfireLob
   class Question
     attr_reader :label, :connector
     
-    def initialize label, connector: NullConnector.new
-      @label, @connector = label, connector
+    def initialize label, choices: %i(yes no), connector: NullConnector.new
+      @label, @choices, @connector = label, choices, connector
     end
     
     def follow_ups # TODO: better name maybe?
-      connector.questions
+      connector.questions.compact
     end
   end
   
   class Branching
-    def initialize(yes:, no:)
-      @yes, @no = yes, no
+    def initialize(**branches)
+      @branches = branches
     end
     
     def call(answer)
-      case answer
-      when :yes
-        @yes
-      when :no
-        @no
-      else
-        raise ArgumentError, "only :yes and :no are accepted answers, got #{answer}"
+      begin
+        @branches.fetch answer
+      rescue KeyError
+        raise ArgumentError, "only #{accepted_values} are accepted answers, got #{answer}"
       end
     end
     
     def questions
-      [@yes, @no]
+      @branches.values
+    end
+    
+    def accepted_values
+      @branches.keys[..-1].join(", ") + " or " + @branches.keys.last
     end
   end
   
@@ -99,10 +100,11 @@ module DrumfireLob
   class IntegrationTest < Minitest::Test
     def test_2_way_branching
       # setup
-      question3 = Question.new "Fancy some Swiss chocolate?"
+      question4 = Question.new "Awesome! Do you prefer dark chocolate or milk chocolate?", choices: %i(dark milk)
+      question3 = Question.new "Fancy some Swiss chocolate?", connector: Branching.new(yes: question4, no: nil)
       question2 = Question.new "Fancy some Swiss mulled wine?"
-      branching = Branching.new(yes: question2, no: question3)             # Implying that branching conditions are always yes/no
-      question1 = Question.new "Are you 18 or more?", connector: branching # Implying that all questions are boolean ATM
+      branching = Branching.new(yes: question2, no: question3)
+      question1 = Question.new "Are you 18 or more?", connector: branching
       
       form = Form.new start: question1
       
@@ -120,6 +122,9 @@ module DrumfireLob
         assert_equal "Fancy some Swiss chocolate?", f.current_question.label
         
         f.answer :yes
+        assert_equal "Awesome! Do you prefer dark chocolate or milk chocolate?", f.current_question.label
+        
+        f.answer :milk
       end
       
       assert_output(<<~TXT) { submission.print_out }
@@ -127,6 +132,8 @@ module DrumfireLob
           > No
         - Fancy some Swiss chocolate?
           > Yes
+        - Awesome! Do you prefer dark chocolate or milk chocolate?
+          > Milk
       TXT
     end
   end
